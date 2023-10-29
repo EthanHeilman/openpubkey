@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/agent"
 
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/openpubkey/openpubkey/examples/ssh/sshcert"
@@ -67,7 +68,7 @@ func RequestSSHCert(client *parties.OpkClient, signer crypto.Signer, alg jwa.Key
 	}
 	certBytes := ssh.MarshalAuthorizedKey(sshcert)
 
-	seckeySsh, err := ssh.MarshalPrivateKey(signer, "openpubkey cert")
+	seckeySsh, err := ssh.MarshalPrivateKey(signer.(crypto.PrivateKey), "openpubkey cert")
 	if err != nil {
 		return nil, nil, err
 	}
@@ -144,9 +145,12 @@ func main() {
 			principals := strings.Split(os.Args[2], ",")
 			principals = []string{}
 
-			// TODO: Use SSH Agent
-			seckeyPath := "./ssh-key"
-			pubkeyPath := seckeyPath + ".pub"
+			homePath, err := os.UserHomeDir()
+
+			sshPath := homePath + "/" + ".ssh" + "/"
+
+			seckeyPath := sshPath + "/id_ecdsa_sk"
+			pubkeyPath := sshPath + "/id_ecdsa_sk.pub"
 			gqFalse := false
 			alg := jwa.ES256
 
@@ -179,6 +183,24 @@ func main() {
 				fmt.Println(err)
 				os.Exit(1)
 			}
+
+			cert, err := sshcert.NewSshCertFromBytes(strings.Split(string(certBytes), " ")[0], strings.Split(string(certBytes), " ")[1])
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+			ag, err := DialAgent()
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+			err = ag.Add(agent.AddedKey{
+				PrivateKey:   signer,
+				Certificate:  cert.Cert,
+				Comment:      "comment",
+				LifetimeSecs: uint32(100000),
+			})
+
 			os.Exit(0)
 		}
 	case "ver":
