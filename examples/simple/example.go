@@ -93,9 +93,11 @@ func main() {
 		ClientID:     "992028499768-ce9juclb3vvckh23r83fjkmvf1lvjq18.apps.googleusercontent.com",
 		ClientSecret: "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", // The client secret is a public value
 		Scopes:       []string{"openid profile email"},
-		RedirURIPort: "3000",
-		CallbackPath: "/login-callback",
-		RedirectURI:  "http://localhost:3000/login-callback",
+		// RedirURIPort: "3000",
+		RedirectURIPorts: []int{49172, 51252, 58243, 59360, 62109},
+		CallbackPath:     "/login-callback",
+		RedirectURI:      "http://localhost:3000/login-callback",
+		RedirectURIs:     []string{"http://localhost:49172/login-callback", "http://localhost:51252/login-callback"},
 	}
 	pktJson, signedMsg, err := Sign(op)
 	if err != nil {

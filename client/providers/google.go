@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto"
 	"fmt"
+	"net"
 	"net/http"
 
 	"time"
@@ -43,12 +44,14 @@ var (
 const googleIssuer = "https://accounts.google.com"
 
 type GoogleOp struct {
-	ClientID        string
-	ClientSecret    string
-	Scopes          []string
-	RedirURIPort    string
+	ClientID     string
+	ClientSecret string
+	Scopes       []string
+	// RedirURIPort     string // Deprecated, use RedirectURIPorts instead
+	// RedirectURIPorts []int
 	CallbackPath    string
 	RedirectURI     string
+	RedirectURIs    []string
 	server          *http.Server
 	httpSessionHook http.HandlerFunc
 }
@@ -56,6 +59,7 @@ type GoogleOp struct {
 var _ client.OpenIdProvider = (*GoogleOp)(nil)
 
 func (g *GoogleOp) RequestTokens(ctx context.Context, cicHash string) (*memguard.LockedBuffer, error) {
+
 	cookieHandler :=
 		httphelper.NewCookieHandler(key, key, httphelper.WithUnsecure())
 	options := []rp.Option{
@@ -110,15 +114,10 @@ func (g *GoogleOp) RequestTokens(ctx context.Context, cicHash string) (*memguard
 
 	http.Handle(g.CallbackPath, rp.CodeExchangeHandler(marshalToken, provider))
 
-	lis := fmt.Sprintf("localhost:%s", g.RedirURIPort)
+	// lis := fmt.Sprintf("localhost:%d", g.RedirectURIPorts[0])
 	g.server = &http.Server{
-		Addr: lis,
+		Addr: g.RedirectURIs[0],
 	}
-
-	logrus.Infof("listening on http://%s/", lis)
-	logrus.Info("press ctrl+c to stop")
-	earl := fmt.Sprintf("http://localhost:%s/login", g.RedirURIPort)
-	util.OpenUrl(earl)
 
 	go func() {
 		err := g.server.ListenAndServe()
@@ -126,6 +125,12 @@ func (g *GoogleOp) RequestTokens(ctx context.Context, cicHash string) (*memguard
 			logrus.Error(err)
 		}
 	}()
+
+	logrus.Infof("listening on ", g.RedirectURIs[0])
+	logrus.Info("press ctrl+c to stop")
+	earl := fmt.Sprintf("%s/login", g.RedirectURIs[0])
+	logrus.Info(earl)
+	util.OpenUrl(earl)
 
 	// If httpSessionHook is not defined shutdown the server when done,
 	// otherwise keep it open for the httpSessionHook
@@ -201,4 +206,36 @@ func (g *GoogleOp) VerifyNonGQSig(ctx context.Context, idt []byte, expectedNonce
 // method is only available to browser based providers.
 func (g *GoogleOp) HookHTTPSession(h http.HandlerFunc) {
 	g.httpSessionHook = h
+}
+
+// Retrieve an open port
+func chooseAvailablePort(possiblePorts []int) (port int, err error) {
+	for _, port := range possiblePorts {
+		if err := checkPortIsAvailable(port); err == nil {
+			return port, nil
+		}
+	}
+
+	return 0, fmt.Errorf("failed to retrieve open port: callback listener could not bind to any of the default ports")
+}
+
+// Reference -> https://gist.github.com/montanaflynn/b59c058ce2adc18f31d6
+// Check if a port is available
+func checkPortIsAvailable(port int) error {
+
+	// Concatenate a colon and the port
+	host := fmt.Sprintf("127.0.0.1:%d", port)
+	// Try to create a server with the port
+	server, err := net.Listen("tcp", host)
+	// if it fails then the port is likely taken
+	if err != nil {
+		return err
+	}
+	// close the server
+	server.Close()
+
+	// we successfully used and closed the port
+	// so it's now available to be used again
+	return nil
+
 }

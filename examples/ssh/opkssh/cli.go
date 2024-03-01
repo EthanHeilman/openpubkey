@@ -56,9 +56,10 @@ func main() {
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
 		Scopes:       scopes,
-		RedirURIPort: redirURIPort,
-		CallbackPath: callbackPath,
-		RedirectURI:  redirectURI,
+		// RedirURIPort: redirURIPort,
+		RedirectURIPorts: []int{49172, 51252, 58243, 59360, 62109},
+		CallbackPath:     callbackPath,
+		RedirectURI:      redirectURI,
 	}
 
 	switch command {
