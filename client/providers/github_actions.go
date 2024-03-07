@@ -14,6 +14,7 @@ import (
 	"github.com/lestrrat-go/jwx/v2/jws"
 	"github.com/openpubkey/openpubkey/client"
 	"github.com/openpubkey/openpubkey/client/providers/discover"
+	"github.com/openpubkey/openpubkey/util"
 	"github.com/openpubkey/openpubkey/verifier"
 )
 
@@ -106,6 +107,8 @@ func (g *GithubOp) RequestTokens(ctx context.Context, cicHash string) (*memguard
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Println(string(util.Base64Encode(rawBody)))
 
 	var jwt struct {
 		Value *memguard.LockedBuffer
