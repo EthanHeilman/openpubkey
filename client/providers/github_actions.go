@@ -118,8 +118,9 @@ func (g *GithubOp) RequestTokens(ctx context.Context, cicHash string) (*memguard
 	}
 	err = json.Unmarshal(rawBody, &jwt)
 	// memguard.WipeBytes(rawBody)
-
-	lb := memguard.NewBufferFromBytes([]byte(jwt.Value))
+	bytesJwt := []byte(jwt.Value)
+	fmt.Println("Got to here")
+	lb := memguard.NewBufferFromBytes(bytesJwt)
 
 	return lb, err
 }
