@@ -2,7 +2,7 @@ name: Go Checks
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "codecov" ]
 
 permissions:
   contents: write
