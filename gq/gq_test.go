@@ -17,17 +17,96 @@
 package gq
 
 import (
+	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/json"
+	"fmt"
+	"math/big"
 	"testing"
 	"time"
 
+	"filippo.io/bigmod"
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jws"
 	"github.com/openpubkey/openpubkey/util"
 	"github.com/stretchr/testify/require"
 )
+
+func TestRSAErrors(t *testing.T) {
+	oidcPrivKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+
+	h := crypto.SHA256.New()
+	h.Write([]byte("abcdedfghijklmnopqrstuvwxyz"))
+	hashedMsg := h.Sum(nil)
+
+	sig, err := rsa.SignPKCS1v15(nil, oidcPrivKey, crypto.SHA256, hashedMsg)
+	require.NoError(t, err)
+	require.NotNil(t, sig)
+
+	var sigInfo big.Int
+	sigInfo.Exp(big.NewInt(2), big.NewInt(2048), nil)
+	sigInfo.Sub(&sigInfo, big.NewInt(1))
+
+	for i := 0; i < 2048; i++ {
+		var smaller big.Int
+		smaller.Set(&sigInfo)
+		smaller.SetBit(&smaller, 2047-i, 0)
+
+		// pubkeyi := &rsa.PublicKey{
+		// 	N: &smaller,
+		// 	E: 65537,
+		// }
+
+		// err := rsa.VerifyPKCS1v15(pubkeyi, crypto.SHA256, hashedMsg, sig)
+		err = XXX(&smaller, sig)
+		if err != nil && err.Error() == "input overflows the modulus" {
+			sigInfo.SetBit(&sigInfo, 2048-i, 1)
+			fmt.Printf("1,")
+		} else {
+			sigInfo.SetBit(&sigInfo, 2048-i, 0)
+			fmt.Printf("0,")
+		}
+
+	}
+	fmt.Printf("sigInfo: %v\n", sigInfo)
+	var bigSig big.Int
+	bigSig.SetBytes(sig)
+	fmt.Printf("bigSig: %v\n", bigSig)
+}
+
+func XXX(n *big.Int, sig []byte) error {
+	N, err := bigmod.NewModulusFromBig(n)
+	if err != nil {
+		return err
+	}
+	_, err = bigmod.NewNat().SetBytes(sig, N)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func TestByZeroFailure(t *testing.T) {
+	// oidcPrivKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	// require.NoError(t, err)
+
+	var i2048 big.Int
+	i2048.Exp(big.NewInt(2), big.NewInt(2048), nil)
+	oidcPubKey := &rsa.PublicKey{
+		N: &i2048,
+		E: 65537,
+	}
+
+	// idToken, err := createOIDCToken(oidcPrivKey, "test")
+	// require.NoError(t, err)
+
+	// Fails with "panic: runtime error: integer divide by zero"
+	_, err := NewSignerVerifier(oidcPubKey, 256)
+	require.NoError(t, err)
+
+}
 
 func TestSignVerifyJWT(t *testing.T) {
 	oidcPrivKey, err := rsa.GenerateKey(rand.Reader, 2048)
