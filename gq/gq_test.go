@@ -49,27 +49,26 @@ func TestRSAErrors(t *testing.T) {
 	sigInfo.Exp(big.NewInt(2), big.NewInt(2048), nil)
 	sigInfo.Sub(&sigInfo, big.NewInt(1))
 
-	for i := 0; i < 2048; i++ {
+	for i := 0; i < sigInfo.BitLen(); i++ {
 		var smaller big.Int
 		smaller.Set(&sigInfo)
 		smaller.SetBit(&smaller, 2047-i, 0)
 
-		// pubkeyi := &rsa.PublicKey{
-		// 	N: &smaller,
-		// 	E: 65537,
-		// }
+		smaller.SetBit(&smaller, sigInfo.BitLen()-i-1, 0)
 
 		// err := rsa.VerifyPKCS1v15(pubkeyi, crypto.SHA256, hashedMsg, sig)
-		err = XXX(&smaller, sig)
+		// bug fix suggested by claude-3-sonnet-20240229
+		err := XXX(&smaller, sig)
 		if err != nil && err.Error() == "input overflows the modulus" {
-			sigInfo.SetBit(&sigInfo, 2048-i, 1)
+			sigInfo.SetBit(&sigInfo, sigInfo.BitLen()-i-1, 1)
 			fmt.Printf("1,")
 		} else {
-			sigInfo.SetBit(&sigInfo, 2048-i, 0)
+			sigInfo.SetBit(&sigInfo, sigInfo.BitLen()-i-1, 0)
 			fmt.Printf("0,")
 		}
 
 	}
+	fmt.Printf("\n")
 	fmt.Printf("sigInfo: %v\n", sigInfo)
 	var bigSig big.Int
 	bigSig.SetBytes(sig)
