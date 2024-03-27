@@ -1,0 +1,190 @@
+package providers
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+
+	"github.com/google/uuid"
+	"github.com/openpubkey/openpubkey/client/providers/discover"
+	"github.com/openpubkey/openpubkey/pktoken/clientinstance"
+	"github.com/openpubkey/openpubkey/util"
+	"github.com/openpubkey/openpubkey/verifier"
+	"github.com/sirupsen/logrus"
+	"github.com/zitadel/oidc/v2/pkg/client/rp"
+	"github.com/zitadel/oidc/v2/pkg/oidc"
+)
+
+const rsaIssuer = "https://setryenv26.auth-demo.securid.com/sso/oidc"
+const rsaAudience = "rsa-client-id-1337"
+
+type RsaOp struct {
+	ClientID        string
+	ClientSecret    string
+	Scopes          []string
+	RedirURIPort    string
+	CallbackPath    string
+	RedirectURI     string
+	SignGQ          bool
+	issuer          string
+	server          *http.Server
+	publicKeyFinder discover.PublicKeyFinder
+	httpSessionHook http.HandlerFunc
+}
+
+func NewRsaOp(ClientID string, ClientSecret string, Scopes []string, RedirURIPort string, CallbackPath string, RedirectURI string, SignGQ bool) *RsaOp {
+
+	return &RsaOp{
+		ClientID:        ClientID,
+		ClientSecret:    ClientSecret,
+		Scopes:          Scopes,
+		RedirURIPort:    RedirURIPort,
+		CallbackPath:    CallbackPath,
+		RedirectURI:     RedirectURI,
+		SignGQ:          SignGQ,
+		issuer:          rsaIssuer,
+		publicKeyFinder: *discover.DefaultPubkeyFinder(),
+	}
+}
+
+var _ OpenIdProvider = (*GoogleOp)(nil)
+var _ BrowserOpenIdProvider = (*GoogleOp)(nil)
+
+func (g *RsaOp) requestTokens(ctx context.Context, cicHash string) ([]byte, error) {
+	// cookieHandler :=
+	// 	httphelper.NewCookieHandler(key, key, httphelper.WithUnsecure())
+	options := []rp.Option{
+		// rp.WithCookieHandler(cookieHandler),
+		rp.WithVerifierOpts(
+			rp.WithIssuedAtOffset(issuedAtOffset), rp.WithNonce(
+				func(ctx context.Context) string { return cicHash })),
+	}
+	// options = append(options, rp.WithPKCE(cookieHandler))
+
+	provider, err := rp.NewRelyingPartyOIDC(
+		rsaIssuer, g.ClientID, g.ClientSecret, g.RedirectURI,
+		g.Scopes, options...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating provider: %w", err)
+	}
+
+	state := func() string {
+		return uuid.New().String()
+	}
+
+	ch := make(chan []byte, 1)
+	chErr := make(chan error, 1)
+
+	http.Handle("/login", rp.AuthURLHandler(state, provider,
+		rp.WithURLParam("nonce", cicHash),
+	// Select account requires that the user click the account they want to use.
+	// Results in better UX than just automatically dropping them into their
+	// only signed in account.
+	// See prompt parameter in OIDC spec https://openid.net/specs/openid-connect-core-1_0.html#AuthRequest
+	),
+	)
+
+	marshalToken := func(w http.ResponseWriter, r *http.Request, tokens *oidc.Tokens[*oidc.IDTokenClaims], state string, rp rp.RelyingParty) {
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			chErr <- err
+			return
+		}
+
+		ch <- []byte(tokens.IDToken)
+
+		// If defined the OIDC client hands over control of the HTTP server session to the OpenPubkey client.
+		// Useful for redirecting the user's browser window that just finished OIDC Auth flow to the
+		// MFA Cosigner Auth URI.
+		if g.httpSessionHook != nil {
+			g.httpSessionHook(w, r)
+			defer g.server.Shutdown(ctx) // If no http session hook is set, we do server shutdown in RequestTokens
+		} else {
+			w.Write([]byte("You may now close this window"))
+		}
+	}
+
+	http.Handle(g.CallbackPath, rp.CodeExchangeHandler(marshalToken, provider))
+
+	lis := fmt.Sprintf("localhost:%s", g.RedirURIPort)
+	g.server = &http.Server{
+		Addr: lis,
+	}
+
+	logrus.Infof("listening on http://%s/", lis)
+	logrus.Info("press ctrl+c to stop")
+	earl := fmt.Sprintf("http://localhost:%s/login", g.RedirURIPort)
+	util.OpenUrl(earl)
+
+	go func() {
+		err := g.server.ListenAndServe()
+		if err != nil && err != http.ErrServerClosed {
+			logrus.Error(err)
+		}
+	}()
+
+	// If httpSessionHook is not defined shutdown the server when done,
+	// otherwise keep it open for the httpSessionHook
+	// If httpSessionHook is set we handle both possible cases to ensure
+	// the server is shutdown:
+	// 1. We shut it down if an error occurs in the marshalToken handler
+	// 2. We shut it down if the marshalToken handler completes
+	if g.httpSessionHook == nil {
+		defer g.server.Shutdown(ctx)
+	}
+	select {
+	case err := <-chErr:
+		if g.httpSessionHook != nil {
+			defer g.server.Shutdown(ctx)
+		}
+		return nil, err
+	case token := <-ch:
+		return token, nil
+	}
+}
+
+func (g *RsaOp) RequestTokens(ctx context.Context, cic *clientinstance.Claims) ([]byte, error) {
+	// Define our commitment as the hash of the client instance claims
+	cicHash, err := cic.Hash()
+	if err != nil {
+		return nil, fmt.Errorf("error calculating client instance claim commitment: %w", err)
+	}
+	idToken, err := g.requestTokens(ctx, string(cicHash))
+	if err != nil {
+		return nil, err
+	}
+	if g.SignGQ {
+		return CreateGQToken(ctx, idToken, g)
+	}
+	return idToken, nil
+}
+
+func (g *RsaOp) Verifier() verifier.ProviderVerifier {
+	return verifier.NewProviderVerifier(rsaIssuer, "nonce", verifier.ProviderVerifierOpts{ClientID: rsaAudience})
+}
+
+func (g *RsaOp) PublicKeyByToken(ctx context.Context, token []byte) (*discover.PublicKeyRecord, error) {
+	return g.publicKeyFinder.ByToken(ctx, g.issuer, token)
+}
+
+func (g *RsaOp) PublicKeyByKeyId(ctx context.Context, keyID string) (*discover.PublicKeyRecord, error) {
+	return g.publicKeyFinder.ByKeyID(ctx, g.issuer, keyID)
+}
+
+func (g *RsaOp) PublicKeyByJTK(ctx context.Context, jtk string) (*discover.PublicKeyRecord, error) {
+	return g.publicKeyFinder.ByJTK(ctx, g.issuer, jtk)
+}
+
+// HookHTTPSession provides a means to hook the HTTP Server session resulting
+// from the OpenID Provider sending an authcode to the OIDC client by
+// redirecting the user's browser with the authcode supplied in the URI.
+// If this hook is set, it will be called after the receiving the authcode
+// but before send an HTTP response to the user. The code which sets this hook
+// can choose what HTTP response to server to the user.
+//
+// We use this so that we can redirect the user web browser window to
+// the MFA Cosigner URI after the user finishes the OIDC Auth flow. This
+// method is only available to browser based providers.
+func (g *RsaOp) HookHTTPSession(h http.HandlerFunc) {
+	g.httpSessionHook = h
+}
