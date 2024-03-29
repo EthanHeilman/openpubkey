@@ -87,6 +87,56 @@ func XXX(n *big.Int, sig []byte) error {
 	return nil
 }
 
+func TestRSAErrorsTiming(t *testing.T) {
+	oidcPrivKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+
+	h := crypto.SHA256.New()
+	h.Write([]byte("abcdedfghijklmnopqrstuvwxyz"))
+	hashedMsg := h.Sum(nil)
+
+	sig, err := rsa.SignPKCS1v15(nil, oidcPrivKey, crypto.SHA256, hashedMsg)
+	require.NoError(t, err)
+	require.NotNil(t, sig)
+
+	var sigInfo big.Int
+	sigInfo.Exp(big.NewInt(2), big.NewInt(2048), nil)
+	sigInfo.Sub(&sigInfo, big.NewInt(1))
+
+	for i := 0; i < sigInfo.BitLen(); i++ {
+		var smaller big.Int
+		smaller.Set(&sigInfo)
+		smaller.SetBit(&smaller, sigInfo.BitLen()-i-1, 0)
+
+		pubkeyi := &rsa.PublicKey{
+			N: &smaller,
+			E: 65537,
+		}
+
+		// bug fix suggested by claude-3-sonnet-20240229
+		startTime := time.Now().Nanosecond()
+		err1 := XXX(&smaller, sig)
+		err = rsa.VerifyPKCS1v15(pubkeyi, crypto.SHA256, hashedMsg, sig)
+		stopTime := time.Now().Nanosecond()
+		elapsed := stopTime - startTime
+		fmt.Printf("Function took %d and err is %s and %s \n", elapsed, err1, err)
+		if err1 != nil && err1.Error() == "input overflows the modulus" {
+			sigInfo.SetBit(&sigInfo, sigInfo.BitLen()-i-1, 1)
+			fmt.Printf("1,")
+		} else {
+			sigInfo.SetBit(&sigInfo, sigInfo.BitLen()-i-1, 0)
+			fmt.Printf("0,")
+		}
+
+	}
+	fmt.Printf("\n")
+	fmt.Printf("sigInfo: %v\n", sigInfo)
+	var bigSig big.Int
+	bigSig.SetBytes(sig)
+	fmt.Printf("bigSig: %v\n", bigSig)
+	require.False(t, true)
+}
+
 func TestByZeroFailure(t *testing.T) {
 	// oidcPrivKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	// require.NoError(t, err)
