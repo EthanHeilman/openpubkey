@@ -1,0 +1,21 @@
+internal/jwx/jwk.go
+  s_869266a99591fa::t_b1491a48524ef6 1-44
+oidc/jwt_test.go
+  s_869266a99591fa::t_20a606b09130bd 78,111-112,118-120,126-128,134-136,157-158
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "906cf3a9d7517a0c77060c94ac57d956b751f8d9",
+  "prompts": {},
+  "sessions": {
+    "s_869266a99591fa": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_1dd3ef7a7ffea6lnCkv1bOTt45",
+        "model": "@cf/moonshotai/kimi-k2.6"
+      },
+      "human_author": "eheilman <eheilman@cloudflare.com>"
+    }
+  }
+}
