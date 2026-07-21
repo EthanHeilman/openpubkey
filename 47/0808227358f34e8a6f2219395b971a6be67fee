@@ -1,0 +1,19 @@
+providers/keybinding_provider.go
+  s_869266a99591fa::t_68d280d4d7f789 302-309
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "470808227358f34e8a6f2219395b971a6be67fee",
+  "prompts": {},
+  "sessions": {
+    "s_869266a99591fa": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_1dd3ef7a7ffea6lnCkv1bOTt45",
+        "model": "@cf/moonshotai/kimi-k2.6"
+      },
+      "human_author": "eheilman <eheilman@cloudflare.com>"
+    }
+  }
+}
