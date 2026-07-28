@@ -1,0 +1,23 @@
+client/cos.go
+  s_ff4987223b72aa::t_f231bcb24c4b1e 46-53,58
+client/cos_test.go
+  s_ff4987223b72aa::t_b623c19a712c4e 20-21,23-25,27,29-32,61-146
+examples/mfa/mfacosigner/jwks/jwksserver.go
+  s_ff4987223b72aa::t_6284857cf30796 78-82,88
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "85f4e113bf6a7f28f3aa5f763153036e41b2d754",
+  "prompts": {},
+  "sessions": {
+    "s_ff4987223b72aa": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_055a6b2faffef0sgD2iQJKP4tP",
+        "model": "@cf/zai-org/glm-5.1"
+      },
+      "human_author": "eheilman <eheilman@cloudflare.com>"
+    }
+  }
+}
