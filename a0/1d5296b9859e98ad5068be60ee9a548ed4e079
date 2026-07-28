@@ -1,0 +1,33 @@
+discover/discover.go
+  s_ff4987223b72aa::t_00944a043768fe 36
+go.mod
+  s_ff4987223b72aa::t_c57ee00f25a654 14,19,21,28,31-36,57
+go.sum
+  s_ff4987223b72aa::t_b5bcfe4f550172 9-12,20-21,25-26,37-38,47-50,77-80,83-84,98-111,118-119
+providers/keybinding_provider.go
+  s_ff4987223b72aa::t_9962d6e8fe7d4d 39-40
+providers/standard_provider.go
+  s_ff4987223b72aa::t_71aaea71bd51d7 36-38
+providers/utils.go
+  s_ff4987223b72aa::t_6c80e663a3a53c 26
+verifier/userinfo.go
+  s_ff4987223b72aa::t_ba045a736471e5 20,22,26,73-79,90-118,120-121,123-132
+verifier/userinfo_test.go
+  s_ff4987223b72aa::t_0451bddc9e8c3b 28,119-224
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "a01d5296b9859e98ad5068be60ee9a548ed4e079",
+  "prompts": {},
+  "sessions": {
+    "s_ff4987223b72aa": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_055a6b2faffef0sgD2iQJKP4tP",
+        "model": "@cf/zai-org/glm-5.1"
+      },
+      "human_author": "eheilman <eheilman@cloudflare.com>"
+    }
+  }
+}
