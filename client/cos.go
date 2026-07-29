@@ -43,13 +43,7 @@ type CosignerProvider struct {
 }
 
 func (c *CosignerProvider) RequestToken(ctx context.Context, signer crypto.Signer, pkt *pktoken.PKToken, redirCh chan string) (*pktoken.PKToken, error) {
-	// Find an unused port on loopback only. We bind an explicit IP literal
-	// rather than "localhost" because "localhost" can resolve to both
-	// 127.0.0.1 and ::1: binding it picks a single address family, and a
-	// client that prefers the other family then connects to a different
-	// socket. Deriving the advertised host from the listener's actual
-	// address below guarantees the bind target and the browser's navigation
-	// target are the same address, so no cross-family mismatch is possible.
+	// Find an unused port
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		return nil, fmt.Errorf("failed to bind to an available port: %w", err)
