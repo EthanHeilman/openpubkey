@@ -1,0 +1,27 @@
+go.sum
+  s_e53334473824ec::t_7584ffeae34207 9-12,20-21,25-26,37-38,47-50,77-80,96-105,112-113
+go.mod
+  s_e53334473824ec::t_ced23bbffdcfdf 9,20-21,30-34,55,60-63
+providers/keybinding_provider.go
+  s_e53334473824ec::t_bbeeb496d996b4 38-43,45-47,70-73
+providers/keybinding_provider_test.go
+  s_e53334473824ec::t_2b590fab392375 21,25,32-38,40-41,61,128
+providers/standard_provider.go
+  s_e53334473824ec::t_88ddcec9fbcba0 30,195-209,287,446,516-525,540
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "86b1381259b9d514e7a06cb735e83522fc2ede04",
+  "prompts": {},
+  "sessions": {
+    "s_e53334473824ec": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0559142d7ffeIdDF7z3mYuMfU7",
+        "model": "claude-opus-5"
+      },
+      "human_author": "eheilman <eheilman@cloudflare.com>"
+    }
+  }
+}
