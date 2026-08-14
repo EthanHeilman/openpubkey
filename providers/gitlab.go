@@ -106,25 +106,23 @@ func GetDefaultGitlabOpOptions() *GitlabOptions {
 
 func NewGitlabOpWithOptions(opts *GitlabOptions) BrowserOpenIdProvider {
 	return &GitlabOp{
-		StandardOp{
-			clientID:                  opts.ClientID,
-			Scopes:                    opts.Scopes,
-			PromptType:                opts.PromptType,
-			AccessType:                opts.AccessType,
-			RedirectURIs:              opts.RedirectURIs,
-			RemoteRedirectURI:         opts.RemoteRedirectURI,
-			GQSign:                    opts.GQSign,
-			DeviceFlow:                opts.DeviceFlow,
-			OpenBrowser:               opts.OpenBrowser,
-			HttpClient:                opts.HttpClient,
-			IssuedAtOffset:            opts.IssuedAtOffset,
-			CallbackHTML:              callbackHTMLOrDefault(opts.CallbackHTML),
-			issuer:                    opts.Issuer,
-			requestTokensOverrideFunc: nil,
-			publicKeyFinder: discover.PublicKeyFinder{
-				JwksFunc: func(ctx context.Context, issuer string) ([]byte, error) {
-					return discover.GetJwksByIssuer(ctx, issuer, opts.HttpClient)
-				},
+		clientID:                  opts.ClientID,
+		Scopes:                    opts.Scopes,
+		PromptType:                opts.PromptType,
+		AccessType:                opts.AccessType,
+		RedirectURIs:              opts.RedirectURIs,
+		RemoteRedirectURI:         opts.RemoteRedirectURI,
+		GQSign:                    opts.GQSign,
+		DeviceFlow:                opts.DeviceFlow,
+		OpenBrowser:               opts.OpenBrowser,
+		HttpClient:                opts.HttpClient,
+		IssuedAtOffset:            opts.IssuedAtOffset,
+		CallbackHTML:              callbackHTMLOrDefault(opts.CallbackHTML),
+		issuer:                    opts.Issuer,
+		requestTokensOverrideFunc: nil,
+		publicKeyFinder: discover.PublicKeyFinder{
+			JwksFunc: func(ctx context.Context, issuer string) ([]byte, error) {
+				return discover.GetJwksByIssuer(ctx, issuer, opts.HttpClient)
 			},
 		},
 	}

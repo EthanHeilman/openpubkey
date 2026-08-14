@@ -148,10 +148,8 @@ func newHelloOpWithOptions(opts *HelloOptions) *HelloOp {
 // using an options struct. This is useful if you want to use your own OIDC
 // Client or override the configuration.
 func NewHelloKeyBindingOpWithOptions(opts *HelloOptions) BrowserOpenIdProvider {
-	return &KeyBindingOpRefreshable{
-		KeyBindingOp: KeyBindingOp{
-			StandardOp: *newHelloOpWithOptions(opts),
-		},
+	return &KeyBindingOp{
+		StandardOp: *newHelloOpWithOptions(opts),
 	}
 }
 

@@ -192,20 +192,23 @@ type StandardOp struct {
 }
 
 func NewStandardKeyBindingOpWithOptions(opts *StandardOpOptions) BrowserOpenIdProvider {
-	return &KeyBindingOpRefreshable{
-		KeyBindingOp: KeyBindingOp{
-			StandardOp: *newStandardOpWithOptions(opts),
-		},
+	return &KeyBindingOp{
+		StandardOp: *newStandardOpWithOptions(opts),
 	}
 }
 
-type StandardOpRefreshable struct {
-	StandardOp
-}
+// StandardOpRefreshable is a deprecated alias for StandardOp.
+//
+// Deprecated: refresh support is no longer a separate type. Whether an OP can
+// refresh is a property of the OP's configuration, discoverable only from its
+// metadata, not something that can be known from its Go type. StandardOp
+// therefore implements RefreshableOpenIdProvider directly and this alias is
+// kept only for source compatibility.
+type StandardOpRefreshable = StandardOp
 
 var _ OpenIdProvider = (*StandardOp)(nil)
 var _ BrowserOpenIdProvider = (*StandardOp)(nil)
-var _ RefreshableOpenIdProvider = (*StandardOpRefreshable)(nil)
+var _ RefreshableOpenIdProvider = (*StandardOp)(nil)
 
 // NewStandardOp creates a standard OP (OpenID Provider) using the
 // default configuration options and returns a BrowserOpenIdProvider.
@@ -494,7 +497,7 @@ func (s *StandardOp) deviceFlowRequestTokens(ctx context.Context, cicHash string
 		AccessToken:  nilIfEmpty(atr.AccessToken)}, nil
 }
 
-func (s *StandardOpRefreshable) RefreshTokens(ctx context.Context, refreshToken []byte) (*simpleoidc.Tokens, error) {
+func (s *StandardOp) RefreshTokens(ctx context.Context, refreshToken []byte) (*simpleoidc.Tokens, error) {
 	cookieHandler, err := configCookieHandler()
 	if err != nil {
 		return nil, err
@@ -565,7 +568,7 @@ func (s *StandardOp) VerifyIDToken(ctx context.Context, idt []byte, cic *clienti
 	return vp.VerifyIDToken(ctx, idt, cic)
 }
 
-func (s *StandardOpRefreshable) VerifyRefreshedIDToken(ctx context.Context, origIdt []byte, reIdt []byte) error {
+func (s *StandardOp) VerifyRefreshedIDToken(ctx context.Context, origIdt []byte, reIdt []byte) error {
 	if err := simpleoidc.SameIdentity(origIdt, reIdt); err != nil {
 		return fmt.Errorf("refreshed ID Token is for different subject than original ID Token: %w", err)
 	}

@@ -236,56 +236,14 @@ func CreateJWK(signer crypto.Signer, alg string) (jwk.Key, error) {
 	return jwkKey, nil
 }
 
-// KeyBindingOpRefreshable extends KeyBindingOp to support a refresh flow
-type KeyBindingOpRefreshable struct {
-	KeyBindingOp
-}
+// KeyBindingOpRefreshable is a deprecated alias for KeyBindingOp.
+//
+// Deprecated: refresh support is no longer a separate type. KeyBindingOp
+// inherits RefreshTokens from StandardOp and overrides VerifyRefreshedIDToken
+// to additionally check that the key binding is unchanged.
+type KeyBindingOpRefreshable = KeyBindingOp
 
-func (r *KeyBindingOpRefreshable) RefreshTokens(ctx context.Context, refreshToken []byte) (*simpleoidc.Tokens, error) {
-	cookieHandler, err := configCookieHandler()
-	if err != nil {
-		return nil, err
-	}
-	options := []rp.Option{
-		rp.WithCookieHandler(cookieHandler),
-		rp.WithVerifierOpts(
-			rp.WithIssuedAtOffset(r.IssuedAtOffset),
-			rp.WithNonce(nil), // disable nonce check
-		),
-	}
-	if r.HttpClient != nil {
-		options = append(options, rp.WithHTTPClient(r.HttpClient))
-	}
-
-	// The redirect URI is not sent in the refresh request so we set it to an empty string.
-	// According to the OIDC spec the only values sent in a refresh request are:
-	// client_id, client_secret, grant_type, refresh_token, and scope.
-	// https://openid.net/specs/openid-connect-core-1_0.html#RefreshingAccessToken
-	redirectURI := ""
-	relyingParty, err := rp.NewRelyingPartyOIDC(ctx, r.issuer, r.clientID,
-		r.ClientSecret, redirectURI, r.Scopes, options...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create RP to verify token: %w", err)
-	}
-	retTokens, err := rp.RefreshTokens[*oidc.IDTokenClaims](ctx, relyingParty, string(refreshToken), "", "")
-	if err != nil {
-		return nil, err
-	}
-
-	if retTokens.RefreshToken == "" {
-		// Google does not rotate refresh tokens, the one you get at the
-		// beginning is the only one you'll ever get. This may not be true
-		// of OPs.
-		retTokens.RefreshToken = string(refreshToken)
-	}
-
-	return &simpleoidc.Tokens{
-		IDToken:      []byte(retTokens.IDToken),
-		RefreshToken: []byte(retTokens.RefreshToken),
-		AccessToken:  []byte(retTokens.AccessToken)}, nil
-}
-
-func (r *KeyBindingOpRefreshable) VerifyRefreshedIDToken(ctx context.Context, origIdt []byte, reIdt []byte) error {
+func (r *KeyBindingOp) VerifyRefreshedIDToken(ctx context.Context, origIdt []byte, reIdt []byte) error {
 	if err := simpleoidc.SameIdentity(origIdt, reIdt); err != nil {
 		return fmt.Errorf("refreshed ID Token is for different subject than original ID Token: %w", err)
 	}
@@ -326,4 +284,4 @@ func (r *KeyBindingOpRefreshable) VerifyRefreshedIDToken(ctx context.Context, or
 	return nil
 }
 
-var _ RefreshableOpenIdProvider = (*KeyBindingOpRefreshable)(nil)
+var _ RefreshableOpenIdProvider = (*KeyBindingOp)(nil)
