@@ -1,7 +1,7 @@
 filippo.io/bigmod v0.1.0 h1:UNzDk7y9ADKST+axd9skUpBQeW7fG2KrTZyOE4uGQy8=
 filippo.io/bigmod v0.1.0/go.mod h1:OjOXDNlClLblvXdwgFFOQFJEocLhhtai8vGLy0JCZlI=
-github.com/EthanHeilman/zitadeloidc/v3 v3.0.0-20260909185844-03890480bf65 h1:shSX0r+XmIYDdwG+yLlEkYZ07QLtjlbloR/UZ/ewmVc=
-github.com/EthanHeilman/zitadeloidc/v3 v3.0.0-20260909185844-03890480bf65/go.mod h1:KQmYte+zOePAeVwR3LM153dxWBC9orWZAIa4w9r1ZhU=
+github.com/EthanHeilman/zitadeloidc/v3 v3.0.0-20260910174939-face7eeee775 h1:UozPAl4DbadKpWRTGFaZAobNcXBW9DYP51zVH1HgBOo=
+github.com/EthanHeilman/zitadeloidc/v3 v3.0.0-20260910174939-face7eeee775/go.mod h1:KQmYte+zOePAeVwR3LM153dxWBC9orWZAIa4w9r1ZhU=
 github.com/awnumar/memcall v0.1.2 h1:7gOfDTL+BJ6nnbtAp9+HQzUFjtP1hEseRQq8eP055QY=
 github.com/awnumar/memcall v0.1.2/go.mod h1:S911igBPR9CThzd/hYQQmTc9SWNu3ZHIlCGaWsWsoJo=
 github.com/awnumar/memguard v0.22.3 h1:b4sgUXtbUjhrGELPbuC62wU+BsPQy+8lkWed9Z+pj0Y=

@@ -56,4 +56,4 @@ require (
 	golang.org/x/text v0.41.0 // indirect
 )
 
-replace github.com/zitadel/oidc/v3 => github.com/EthanHeilman/zitadeloidc/v3 v3.0.0-20260909185844-03890480bf65
+replace github.com/zitadel/oidc/v3 => github.com/EthanHeilman/zitadeloidc/v3 v3.0.0-20260910174939-face7eeee775
