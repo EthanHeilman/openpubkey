@@ -18,29 +18,10 @@ package discover
 
 import (
 	"context"
-	"crypto"
 	"errors"
 	"sync"
-	"testing"
 	"time"
-
-	"github.com/stretchr/testify/require"
 )
-
-// createMockJwks builds the JSON JWKS document that MockGetJwksByIssuer would serve
-// for the supplied keys, so that tests can hand it to a MockJwksSource or write
-// it straight into a cache.
-func createMockJwks(t *testing.T, issuer string, publicKeys []crypto.PublicKey, keyIDs []string, algs []string) []byte {
-	t.Helper()
-
-	mockJwks, err := MockGetJwksByIssuer(publicKeys, keyIDs, algs)
-	require.NoError(t, err)
-
-	jwksJson, err := mockJwks(context.Background(), issuer)
-	require.NoError(t, err)
-
-	return jwksJson
-}
 
 // MockJwksSource stands in for a provider's JWKS endpoint. It counts calls so
 // tests can tell whether a lookup was served from the cache, and its response

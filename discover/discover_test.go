@@ -924,3 +924,15 @@ func TestConcurrentLookups(t *testing.T) {
 		require.NoError(t, err)
 	}
 }
+
+func createMockJwks(t *testing.T, issuer string, publicKeys []crypto.PublicKey, keyIDs []string, algs []string) []byte {
+	t.Helper()
+
+	mockJwks, err := MockGetJwksByIssuer(publicKeys, keyIDs, algs)
+	require.NoError(t, err)
+
+	jwksJson, err := mockJwks(context.Background(), issuer)
+	require.NoError(t, err)
+
+	return jwksJson
+}
