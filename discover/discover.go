@@ -167,7 +167,7 @@ func parseJwks(b []byte) (jwk.Set, error) {
 
 // readCache returns the cached JWKS for issuer if there is a usable entry no
 // older than maxAge. A cache miss, a read error, or an unparseable entry all
-// yield nil — the caller is expected to fall back to a fresh fetch.
+// yield nil. On failure we expect caller to fall back to a fresh fetch.
 func (f *PublicKeyFinder) readCache(ctx context.Context, issuer string, maxAge time.Duration) jwk.Set {
 	if f.CacheConfig.Cache == nil {
 		return nil
