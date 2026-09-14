@@ -30,7 +30,9 @@ type DiscoveryCacheConfig struct {
 	// Cache is the discovery cache (if any) used by this provider
 	Cache DiscoveryCache
 	// StandardMaxAge is the standard maximum age of a cache entry before it
-	// is considered expired
+	// is considered expired. A zero (or negative) value disables caching
+	// entirely for this provider, exactly as if Cache were nil: no cached
+	// entry is ever served and no entry is ever written.
 	StandardMaxAge time.Duration
 	// FallbackMaxAge is the absolute maximum age of a cache entry - entries
 	// older than the StandardMaxAge but younger than the FallbackMaxAge may be

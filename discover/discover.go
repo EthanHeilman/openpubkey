@@ -165,11 +165,19 @@ func parseJwks(b []byte) (jwk.Set, error) {
 	return jwks, nil
 }
 
+// cachingEnabled reports whether this finder has a usable cache configured.
+// A nil Cache or a non-positive StandardMaxAge both mean "no caching".
+func (f *PublicKeyFinder) cachingEnabled(maxAge time.Duration) bool {
+	return f.CacheConfig.Cache != nil && maxAge > 0
+}
+
 // readCache returns the cached JWKS for issuer if there is a usable entry no
-// older than maxAge. A cache miss, a read error, or an unparseable entry all
-// yield nil. On failure we expect caller to fall back to a fresh fetch.
+// older than maxAge. A cache miss or a read error yields nil, and an
+// unparseable entry is invalidated and also yields nil; in every failure case
+// the caller is expected to fall back to a fresh fetch. A non-positive maxAge
+// is treated as "no usable entry".
 func (f *PublicKeyFinder) readCache(ctx context.Context, issuer string, maxAge time.Duration) jwk.Set {
-	if f.CacheConfig.Cache == nil {
+	if !f.cachingEnabled(maxAge) {
 		return nil
 	}
 	b, err := f.CacheConfig.Cache.Read(ctx, issuer, maxAge)
@@ -178,7 +186,13 @@ func (f *PublicKeyFinder) readCache(ctx context.Context, issuer string, maxAge t
 	}
 	jwks, err := parseJwks(b)
 	if err != nil {
-		_, _ = fmt.Fprintf(f.ErrWriter(), "Failed to unmarshal cached JWKS for %s: %v\n", issuer, err)
+		// The cached bytes are unusable. Purge the entry so a later fallback
+		// read (or the next lookup) sees a clean miss instead of re-failing on
+		// the same garbage.
+		_, _ = fmt.Fprintf(f.ErrWriter(), "Discarding unparseable cached JWKS for %s: %v\n", issuer, err)
+		if err := f.CacheConfig.Cache.Invalidate(ctx, issuer); err != nil {
+			_, _ = fmt.Fprintf(f.ErrWriter(), "Failed to invalidate corrupt JWKS cache for %s: %v\n", issuer, err)
+		}
 		return nil
 	}
 	return jwks
@@ -194,14 +208,16 @@ func (f *PublicKeyFinder) fetchFresh(ctx context.Context, issuer string) (jwk.Se
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal fresh JWKS: %w", err)
 	}
-	if f.CacheConfig.Cache != nil {
+	if f.cachingEnabled(f.CacheConfig.StandardMaxAge) {
 		if err := f.CacheConfig.Cache.Write(issuer, jwksJson); err != nil {
 			_, _ = fmt.Fprintf(f.ErrWriter(), "Failed to write JWKS cache for %s: %v\n", issuer, err)
 		}
 	}
 	return jwks, nil
-}
-
+} // fetchAndParseJwks fetches the JWKS from the provider and parses it, r
+// returning the parsed JWKS and a boolean indicating if the JWKS was
+// served from cache or not. If mayUseCache is set to false, then the cache is
+// ignored and a fresh fetch is always attempted.
 func (f *PublicKeyFinder) fetchAndParseJwks(ctx context.Context, issuer string, mayUseCache bool) (jwk.Set, bool, error) {
 	if mayUseCache {
 		if jwks := f.readCache(ctx, issuer, f.CacheConfig.StandardMaxAge); jwks != nil {
